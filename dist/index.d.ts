@@ -1,5 +1,5 @@
 type MessageHandler = (data: any) => void;
-export declare class SSEClient {
+export declare class PushletClient {
     private sources;
     private handlers;
     private baseUrl;

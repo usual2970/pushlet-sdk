@@ -1,6 +1,6 @@
 type MessageHandler = (data: any) => void;
 
-export class SSEClient {
+export class PushletClient {
   private sources: Map<string, EventSource> = new Map();
   private handlers: Map<string, MessageHandler> = new Map();
   private baseUrl: string;

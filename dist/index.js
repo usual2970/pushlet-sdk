@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SSEClient = void 0;
-class SSEClient {
+exports.PushletClient = void 0;
+class PushletClient {
     constructor(baseUrl) {
         this.sources = new Map();
         this.handlers = new Map();
@@ -47,4 +47,4 @@ class SSEClient {
         }
     }
 }
-exports.SSEClient = SSEClient;
+exports.PushletClient = PushletClient;
