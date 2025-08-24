@@ -6,6 +6,7 @@ export declare class PushletClient {
     private baseUrl;
     private protocol;
     private wsConnection;
+    private pendingSubscriptions;
     constructor(baseUrl: string, protocol?: ProtocolType);
     initWebSocket(): void;
     subscribe(topic: string, onMessage: MessageHandler): () => void;
