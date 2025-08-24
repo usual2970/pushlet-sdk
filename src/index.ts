@@ -1,15 +1,89 @@
 type MessageHandler = (data: any) => void;
 
+type ProtocolType = "ws" | "sse";
 export class PushletClient {
   private sources: Map<string, EventSource> = new Map();
   private handlers: Map<string, MessageHandler> = new Map();
   private baseUrl: string;
+  private protocol: ProtocolType;
+  private wsConnection: WebSocket | null = null;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, protocol: ProtocolType = "sse") {
     this.baseUrl = baseUrl.replace(/\/$/, ""); // remove trailing slash
+    this.protocol = protocol;
+  }
+
+  initWebSocket() {
+    if (!this.wsConnection || this.wsConnection.readyState !== WebSocket.OPEN) {
+      this.wsConnection = new WebSocket(this.baseUrl);
+      this.wsConnection.onopen = () => {
+        console.log("WebSocket connection established");
+      };
+      this.wsConnection.onmessage = (event) => {
+        try {
+          // 解析二进制消息格式，假设格式为 "TOPIC data"
+          const message = parseBinaryAsText(event.data);
+          const parts = message.split(" ", 2);
+          if (parts.length >= 2) {
+            const topic = parts[0];
+            const data = message.substring(parts[0].length + 1);
+            const handler = this.handlers.get(topic);
+            if (handler) {
+              try {
+                // 尝试解析为 JSON
+                const jsonData = JSON.parse(data);
+                handler(jsonData);
+              } catch {
+                // 解析失败则传递原始字符串
+                handler(data);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error parsing WebSocket message:", err);
+        }
+      };
+      this.wsConnection.onerror = (err) => {
+        console.error("WebSocket error:", err);
+      };
+      this.wsConnection.onclose = () => {
+        console.log("WebSocket connection closed");
+      };
+    }
   }
 
   subscribe(topic: string, onMessage: MessageHandler): () => void {
+    if (this.protocol == "ws") {
+      this.initWebSocket();
+
+      // 发送二进制订阅消息：'SUB TOPIC'
+      if (this.wsConnection?.readyState === WebSocket.OPEN) {
+        this.wsConnection.send(parseTextAsBinary(`SUB ${topic}`));
+      } else {
+        // 如果连接还未建立，等待连接打开后再发送
+        this.wsConnection?.addEventListener("open", () => {
+          this.wsConnection?.send(parseTextAsBinary(`SUB ${topic}`));
+        });
+      }
+
+      if (this.handlers.has(topic)) {
+        console.warn(`Already subscribed to topic "${topic}"`);
+      }
+
+      this.handlers.set(topic, onMessage);
+
+      // 返回一个取消订阅的函数
+      return () => {
+        if (
+          this.wsConnection &&
+          this.wsConnection.readyState === WebSocket.OPEN
+        ) {
+          this.wsConnection.send(parseTextAsBinary(`UNSUB ${topic}`));
+        }
+        this.handlers.delete(topic);
+      };
+    }
+
     if (this.sources.has(topic)) {
       console.warn(`Already subscribed to topic "${topic}"`);
       // 即使已订阅，也返回一个可用的取消订阅函数
@@ -40,6 +114,20 @@ export class PushletClient {
   }
 
   unsubscribe(topic: string) {
+    if (this.protocol === "ws") {
+      // WebSocket 模式下发送取消订阅消息
+      if (
+        this.wsConnection &&
+        this.wsConnection.readyState === WebSocket.OPEN
+      ) {
+        this.wsConnection.send(parseTextAsBinary(`UNSUB ${topic}`));
+      }
+      this.handlers.delete(topic);
+      console.log(`Unsubscribed from WebSocket topic "${topic}"`);
+      return;
+    }
+
+    // SSE 模式下的取消订阅逻辑
     const source = this.sources.get(topic);
     if (source) {
       source.close();
@@ -50,8 +138,27 @@ export class PushletClient {
   }
 
   unsubscribeAll() {
+    if (this.protocol === "ws") {
+      // WebSocket 模式下取消所有订阅
+      for (const topic of this.handlers.keys()) {
+        this.unsubscribe(topic);
+      }
+      return;
+    }
+
+    // SSE 模式下取消所有订阅
     for (const topic of this.sources.keys()) {
       this.unsubscribe(topic);
     }
   }
+}
+
+function parseBinaryAsText(buffer: ArrayBuffer): string {
+  const decoder = new TextDecoder("utf-8"); // 默认就是 utf-8
+  return decoder.decode(new Uint8Array(buffer));
+}
+
+function parseTextAsBinary(text: string): ArrayBuffer {
+  const encoder = new TextEncoder(); // 默认就是 utf-8
+  return encoder.encode(text).buffer;
 }
