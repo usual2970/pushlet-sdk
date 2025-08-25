@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SSE = void 0;
-const _1 = require(".");
-class SSE extends _1.PushletClient {
+const pushletClient_1 = require("./pushletClient");
+class SSE extends pushletClient_1.PushletClient {
     constructor(baseUrl) {
         super(baseUrl, "sse");
     }

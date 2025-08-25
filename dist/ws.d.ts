@@ -1,4 +1,4 @@
-import { MessageHandler, PushletClient } from ".";
+import { MessageHandler, PushletClient } from "./pushletClient";
 export declare class WS extends PushletClient {
     constructor(baseUrl: string);
     initWebSocket(): void;

@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WS = void 0;
-const _1 = require(".");
-class WS extends _1.PushletClient {
+const pushletClient_1 = require("./pushletClient");
+const utils_1 = require("./utils");
+class WS extends pushletClient_1.PushletClient {
     constructor(baseUrl) {
         super(baseUrl, "ws");
     }
@@ -21,7 +22,7 @@ class WS extends _1.PushletClient {
             this.pendingSubscriptions.forEach(({ topic }) => {
                 var _a;
                 if (((_a = this.wsConnection) === null || _a === void 0 ? void 0 : _a.readyState) === WebSocket.OPEN) {
-                    this.wsConnection.send((0, _1.parseTextAsBinary)(`SUB ${topic}`));
+                    this.wsConnection.send((0, utils_1.parseTextAsBinary)(`SUB ${topic}`));
                 }
             });
             this.pendingSubscriptions = [];
@@ -29,7 +30,7 @@ class WS extends _1.PushletClient {
         this.wsConnection.onmessage = (event) => {
             try {
                 // 解析二进制消息格式，假设格式为 "TOPIC data"
-                const message = (0, _1.parseBinaryAsText)(event.data);
+                const message = (0, utils_1.parseBinaryAsText)(event.data);
                 const parts = message.split(" ", 2);
                 if (parts.length >= 2) {
                     const topic = parts[0];
@@ -70,7 +71,7 @@ class WS extends _1.PushletClient {
         // 发送订阅消息
         if (((_a = this.wsConnection) === null || _a === void 0 ? void 0 : _a.readyState) === WebSocket.OPEN) {
             // 连接已打开，直接发送
-            this.wsConnection.send((0, _1.parseTextAsBinary)(`SUB ${topic}`));
+            this.wsConnection.send((0, utils_1.parseTextAsBinary)(`SUB ${topic}`));
         }
         else {
             // 连接未打开，添加到待处理队列
@@ -80,7 +81,7 @@ class WS extends _1.PushletClient {
         return () => {
             if (this.wsConnection &&
                 this.wsConnection.readyState === WebSocket.OPEN) {
-                this.wsConnection.send((0, _1.parseTextAsBinary)(`UNSUB ${topic}`));
+                this.wsConnection.send((0, utils_1.parseTextAsBinary)(`UNSUB ${topic}`));
             }
             this.handlers.delete(topic);
             // 从待处理队列中移除
@@ -89,7 +90,7 @@ class WS extends _1.PushletClient {
     }
     toUnsubscribe(topic) {
         if (this.wsConnection && this.wsConnection.readyState === WebSocket.OPEN) {
-            this.wsConnection.send((0, _1.parseTextAsBinary)(`UNSUB ${topic}`));
+            this.wsConnection.send((0, utils_1.parseTextAsBinary)(`UNSUB ${topic}`));
         }
         this.handlers.delete(topic);
         console.log(`Unsubscribed from WebSocket topic "${topic}"`);

@@ -1,9 +1,5 @@
-import {
-  MessageHandler,
-  parseBinaryAsText,
-  parseTextAsBinary,
-  PushletClient,
-} from ".";
+import { MessageHandler, PushletClient } from "./pushletClient";
+import { parseBinaryAsText, parseTextAsBinary } from "./utils";
 
 export class WS extends PushletClient {
   constructor(baseUrl: string) {

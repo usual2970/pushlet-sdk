@@ -1,4 +1,4 @@
-import { MessageHandler, PushletClient } from ".";
+import { MessageHandler, PushletClient } from "./pushletClient";
 export declare class SSE extends PushletClient {
     constructor(baseUrl: string);
     toSubscribe(topic: string, onMessage: MessageHandler): () => void;
