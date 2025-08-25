@@ -1,6 +1,6 @@
 {
   "name": "pushlet",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A TypeScript SDK for subscribing to topics via Server-Sent Events (SSE).",
   "main": "dist/index.js",
   "files": [
