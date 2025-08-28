@@ -63,6 +63,42 @@ const unsubscribe = client.subscribe('live-updates', (data) => {
 unsubscribe();
 ```
 
+## 断线重连配置
+
+Pushlet SDK 提供了强大的断线重连功能，支持指数退避策略：
+
+```typescript
+import { NewPushletClient, ReconnectOptions } from 'pushlet';
+
+// 自定义重连配置
+const reconnectOptions: Partial<ReconnectOptions> = {
+  enabled: true,           // 启用重连（默认: true）
+  maxRetries: 10,         // 最大重试次数（默认: 5）
+  retryDelay: 2000,       // 初始重连延迟，毫秒（默认: 1000）
+  maxRetryDelay: 60000,   // 最大重连延迟，毫秒（默认: 30000）
+  backoffMultiplier: 1.5  // 指数退避乘数（默认: 2）
+};
+
+// 创建带重连配置的客户端
+const client = NewPushletClient(
+  'https://api.example.com/events', 
+  'sse', 
+  reconnectOptions
+);
+
+// 订阅主题，SDK 会自动处理断线重连
+const unsubscribe = client.subscribe('notifications', (data) => {
+  console.log('收到消息:', data);
+});
+```
+
+### 重连策略说明
+
+- **指数退避**：重连延迟会按照 `retryDelay * backoffMultiplier^attempt` 计算
+- **最大延迟限制**：重连延迟不会超过 `maxRetryDelay`
+- **智能重连**：只有在有活跃订阅时才会尝试重连
+- **自动恢复**：重连成功后会自动恢复所有订阅
+
 ## 高级用法
 
 ### 同时使用两种协议
