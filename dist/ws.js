@@ -112,6 +112,8 @@ class WS extends pushletClient_1.PushletClient {
         this.wsConnection.onopen = () => {
             var _a;
             console.log("WebSocket connection established");
+            // 判断是否为重连场景（在重置计数器之前）
+            const isReconnecting = this.wsReconnectAttempts > 0;
             // 重置重连计数器
             this.wsReconnectAttempts = 0;
             this.clearWsReconnectTimer();
@@ -124,10 +126,14 @@ class WS extends pushletClient_1.PushletClient {
                     this.wsConnection.send((0, utils_1.parseTextAsBinary)(`SUB ${topic}`));
                 }
             });
-            // 重新订阅所有已有的主题
-            for (const topic of this.handlers.keys()) {
-                if (((_a = this.wsConnection) === null || _a === void 0 ? void 0 : _a.readyState) === WebSocket.OPEN) {
-                    this.wsConnection.send((0, utils_1.parseTextAsBinary)(`SUB ${topic}`));
+            // 如果是重连场景，需要重新订阅已有的主题（但要排除待处理队列中已经包含的）
+            if (isReconnecting) {
+                const pendingTopics = new Set(this.pendingSubscriptions.map((sub) => sub.topic));
+                for (const topic of this.handlers.keys()) {
+                    if (!pendingTopics.has(topic) &&
+                        ((_a = this.wsConnection) === null || _a === void 0 ? void 0 : _a.readyState) === WebSocket.OPEN) {
+                        this.wsConnection.send((0, utils_1.parseTextAsBinary)(`SUB ${topic}`));
+                    }
                 }
             }
             this.pendingSubscriptions = [];
